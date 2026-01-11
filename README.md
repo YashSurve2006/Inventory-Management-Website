@@ -136,32 +136,6 @@ This project demonstrates modern web development practices using a structured ar
 
 ---
 
-## 📁 Project Structure
-
-Inventory-Management-Website/
-├── backend/
-│ ├── controllers/
-│ ├── routes/
-│ ├── middleware/
-│ └── server.js
-│
-├── frontend/
-│ ├── src/
-│ │ ├── pages/
-│ │ ├── user/
-│ │ │ ├── pages/
-│ │ │ ├── components/
-│ │ │ └── services/
-│ │ ├── Context/
-│ │ ├── api.js
-│ │ └── App.jsx
-│ └── package.json
-│
-└── README.md
-
-
----
-
 ## 🔄 Application Workflow
 
 1. User logs in or registers
