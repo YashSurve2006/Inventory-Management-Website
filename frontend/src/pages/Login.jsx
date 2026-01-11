@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 export default function Login() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");     // using email
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,16 +23,29 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await loginUser({ email: email.trim(), password });
+      const res = await loginUser({
+        email: email.trim(),
+        password,
+      });
 
-      // Save token & user consistently
       const { token, user } = res.data;
 
-      localStorage.setItem("ix_token", token);
-      localStorage.setItem("ix_user", JSON.stringify(user));
+      // ✅ STORE USER + TOKEN TOGETHER (CONSISTENT)
+      localStorage.setItem(
+        "ix_user",
+        JSON.stringify({
+          ...user,
+          token,
+        })
+      );
 
-      // Go to dashboard
-      navigate("/dashboard", { replace: true });
+      // ✅ ROLE-BASED REDIRECT
+      if (user.role === "admin") {
+        navigate("/dashboard", { replace: true });
+      } else {
+        navigate("/user/dashboard", { replace: true });
+      }
+
     } catch (err) {
       console.error("Login error:", err?.response?.data || err.message);
       setError(err.response?.data?.error || "Invalid email or password");
@@ -53,7 +66,9 @@ export default function Login() {
           <h1 className="text-3xl font-extrabold bg-linear-to-r from-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">
             InventoryX
           </h1>
-          <p className="text-sm text-slate-500 mt-1">Sign in to your account</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Sign in to your account
+          </p>
         </div>
 
         {error && (

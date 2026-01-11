@@ -2,9 +2,9 @@ import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./Context/AuthContext";
 
+/* -------------------- ADMIN IMPORTS (UNCHANGED) -------------------- */
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
-import Profile from "./pages/Profile";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -13,43 +13,63 @@ import Products from "./pages/Products";
 import Suppliers from "./pages/Suppliers";
 import Reports from "./pages/Reports";
 import Transactions from "./pages/Transactions";
+import Profile from "./pages/Profile";
 
-/**
- * Protected wrapper - checks localStorage for logged-in user
- * NOTE: we use "ix_user" for consistency
- */
+/* -------------------- USER IMPORTS -------------------- */
+import UserDashboard from "./user/pages/UserDashboard";
+import BrowseProducts from "./user/pages/BrowseProducts";
+import Cart from "./user/pages/Cart";
+import MyOrders from "./user/pages/MyOrders";
+import UserProfile from "./user/pages/UserProfile";
+import UserProtectedRoute from "./user/components/UserProtectedRoute";
+
+/* -------------------- ROOT REDIRECT -------------------- */
+import RootRedirect from "./pages/RootRedirect";
+
+/* -------------------- ADMIN PROTECTED (UNCHANGED LOGIC) -------------------- */
 function Protected({ children }) {
   const user = JSON.parse(localStorage.getItem("ix_user") || "null");
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
+/* -------------------- APP -------------------- */
 export default function AppWrapper() {
   const location = useLocation();
-  // Option A: hide sidebar/topbar on auth pages
-  const hideLayout = location.pathname === "/login" || location.pathname === "/register";
+
+  // Hide admin layout on auth + user pages
+  const hideAdminLayout =
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname.startsWith("/user");
 
   return (
     <AuthProvider>
       <div className="flex min-h-screen bg-slate-50">
-        {/* Conditionally show Sidebar */}
-        {!hideLayout && <Sidebar />}
+        {/* ADMIN SIDEBAR */}
+        {!hideAdminLayout && <Sidebar />}
 
-        {/* ✅ MAIN UPDATED HERE */}
-        <main className="flex-1 min-h-screen ml-60 overflow-y-auto">
-
-          {/* Conditionally show Topbar */}
-          {!hideLayout && (
+        <main
+          className={`flex-1 min-h-screen ${!hideAdminLayout ? "ml-60" : ""
+            }`}
+        >
+          {/* ADMIN TOPBAR */}
+          {!hideAdminLayout && (
             <div className="sticky top-0 z-50 bg-white shadow">
               <Topbar />
             </div>
           )}
 
-          <div className={`${hideLayout ? "flex items-center justify-center p-6" : "p-6"}`}>
+          <div className="p-6">
             <Routes>
+              {/* ---------------- ROOT ---------------- */}
+              <Route path="/" element={<RootRedirect />} />
+
+              {/* ---------------- AUTH ---------------- */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
+              {/* ---------------- ADMIN (SAFE) ---------------- */}
               <Route
                 path="/dashboard"
                 element={
@@ -58,11 +78,6 @@ export default function AppWrapper() {
                   </Protected>
                 }
               />
-              <Route path="/profile" element={
-                <Protected>
-                  <Profile />
-                </Protected>
-              } />
 
               <Route
                 path="/products"
@@ -72,11 +87,6 @@ export default function AppWrapper() {
                   </Protected>
                 }
               />
-              <Route path="/profile" element={
-                <Protected>
-                  <Profile />
-                </Protected>
-              } />
 
               <Route
                 path="/suppliers"
@@ -105,7 +115,63 @@ export default function AppWrapper() {
                 }
               />
 
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route
+                path="/profile"
+                element={
+                  <Protected>
+                    <Profile />
+                  </Protected>
+                }
+              />
+
+              {/* ---------------- USER (ISOLATED) ---------------- */}
+              <Route
+                path="/user/dashboard"
+                element={
+                  <UserProtectedRoute>
+                    <UserDashboard />
+                  </UserProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/user/products"
+                element={
+                  <UserProtectedRoute>
+                    <BrowseProducts />
+                  </UserProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/user/cart"
+                element={
+                  <UserProtectedRoute>
+                    <Cart />
+                  </UserProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/user/orders"
+                element={
+                  <UserProtectedRoute>
+                    <MyOrders />
+                  </UserProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/user/profile"
+                element={
+                  <UserProtectedRoute>
+                    <UserProfile />
+                  </UserProtectedRoute>
+                }
+              />
+
+              {/* ---------------- FALLBACK ---------------- */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </main>
