@@ -1,36 +1,51 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import UserLayout from "../components/UserLayout";
 import { motion, AnimatePresence } from "framer-motion";
-
-/* 🔒 DEMO DATA – LOCKED FOR PRESENTATION */
-const ORDERS = [
-    {
-        id: "ORD-1021",
-        date: "12 Mar 2026",
-        total: 76400,
-        status: "Shipped",
-        items: ["Laptop Pro 15", "Wireless Mouse"],
-    },
-    {
-        id: "ORD-1014",
-        date: "05 Mar 2026",
-        total: 9800,
-        status: "Delivered",
-        items: ["Office Chair"],
-    },
-    {
-        id: "ORD-1002",
-        date: "28 Feb 2026",
-        total: 4200,
-        status: "Pending",
-        items: ["Mechanical Keyboard"],
-    },
-];
+import { getMyOrders, cancelOrder } from "../../api";
 
 const FLOW = ["Pending", "Approved", "Shipped", "Delivered"];
 
 export default function MyOrders() {
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(null);
+
+    useEffect(() => {
+        fetchOrders();
+    }, []);
+
+    const fetchOrders = async () => {
+        try {
+            const res = await getMyOrders();
+            setOrders(res.data || []);
+        } catch (err) {
+            console.error("Failed to fetch orders", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    /* =========================
+       CANCEL ORDER (DB-SYNCED)
+       Removes from dashboard
+    ========================= */
+    const handleCancel = async (orderId) => {
+        const confirm = window.confirm(
+            "Are you sure you want to cancel this order?"
+        );
+        if (!confirm) return;
+
+        try {
+            await cancelOrder(orderId);
+            // Remove from UI instantly
+            setOrders((prev) =>
+                prev.filter((order) => order.id !== orderId)
+            );
+        } catch (err) {
+            console.error("Cancel failed", err);
+            alert("Unable to cancel order");
+        }
+    };
 
     return (
         <UserLayout>
@@ -42,104 +57,193 @@ export default function MyOrders() {
                 style={header}
             >
                 <h1 style={title}>My Orders</h1>
-                <p style={subtitle}>Track & review your purchases</p>
+                <p style={subtitle}>Track and manage your purchases</p>
             </motion.div>
 
+            {/* LOADING */}
+            {loading && (
+                <div style={empty}>Loading orders...</div>
+            )}
+
+            {/* EMPTY */}
+            {!loading && orders.length === 0 && (
+                <div style={empty}>
+                    You have no active orders 📦
+                </div>
+            )}
+
             {/* ORDER LIST */}
-            <div style={list}>
-                {ORDERS.map((order) => {
-                    const progress =
-                        ((FLOW.indexOf(order.status) + 1) / FLOW.length) * 100;
+            {!loading && orders.length > 0 && (
+                <div style={list}>
+                    {orders.map((order) => {
+                        const progress =
+                            ((FLOW.indexOf(order.status) + 1) /
+                                FLOW.length) *
+                            100;
 
-                    return (
-                        <motion.div
-                            key={order.id}
-                            layout
-                            initial={{ opacity: 0, scale: 0.96 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.35 }}
-                            style={card}
-                        >
-                            {/* TOP */}
-                            <div style={topRow}>
-                                <div>
-                                    <h3 style={orderId}>{order.id}</h3>
-                                    <span style={date}>{order.date}</span>
-                                </div>
-
-                                <div style={right}>
-                                    <span style={{ ...badge, ...badgeStyle(order.status) }}>
-                                        {order.status}
-                                    </span>
-                                    <span style={amount}>₹{order.total}</span>
-                                </div>
-                            </div>
-
-                            {/* PROGRESS */}
-                            <div style={progressWrap}>
-                                <motion.div
-                                    style={progressBar}
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progress}%` }}
-                                    transition={{ duration: 0.8 }}
-                                />
-                            </div>
-
-                            {/* ACTION */}
-                            <button
-                                style={trackBtn}
-                                onClick={() =>
-                                    setOpen(open === order.id ? null : order.id)
-                                }
+                        return (
+                            <motion.div
+                                key={order.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.96 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.35 }}
+                                style={card}
                             >
-                                {open === order.id ? "Hide Tracking" : "Track Order"}
-                            </button>
+                                {/* TOP */}
+                                <div style={topRow}>
+                                    <div>
+                                        <h3 style={orderId}>
+                                            ORD-{order.id}
+                                        </h3>
+                                        <span style={date}>
+                                            {new Date(
+                                                order.created_at
+                                            ).toLocaleDateString("en-IN", {
+                                                day: "2-digit",
+                                                month: "short",
+                                                year: "numeric",
+                                            })}
+                                        </span>
+                                    </div>
 
-                            {/* EXPAND */}
-                            <AnimatePresence>
-                                {open === order.id && (
+                                    <div style={right}>
+                                        <span
+                                            style={{
+                                                ...badge,
+                                                ...badgeStyle(
+                                                    order.status
+                                                ),
+                                            }}
+                                        >
+                                            {order.status}
+                                        </span>
+                                        <span style={amount}>
+                                            ₹{order.total_amount}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* PROGRESS */}
+                                <div style={progressWrap}>
                                     <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: "auto" }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        transition={{ duration: 0.35 }}
-                                        style={details}
-                                    >
-                                        {/* TIMELINE */}
-                                        <div style={timeline}>
-                                            {FLOW.map((step) => (
-                                                <TimelineStep
-                                                    key={step}
-                                                    label={step}
-                                                    active={
-                                                        FLOW.indexOf(step) <=
-                                                        FLOW.indexOf(order.status)
-                                                    }
-                                                />
-                                            ))}
-                                        </div>
+                                        style={progressBar}
+                                        initial={{ width: 0 }}
+                                        animate={{
+                                            width: `${progress}%`,
+                                        }}
+                                        transition={{ duration: 0.6 }}
+                                    />
+                                </div>
 
-                                        {/* ITEMS */}
-                                        <div>
-                                            <h4 style={sectionTitle}>Items</h4>
-                                            <ul style={items}>
-                                                {order.items.map((i, idx) => (
-                                                    <li key={idx}>• {i}</li>
+                                {/* ACTIONS */}
+                                <div style={actions}>
+                                    <button
+                                        style={trackBtn}
+                                        onClick={() =>
+                                            setOpen(
+                                                open === order.id
+                                                    ? null
+                                                    : order.id
+                                            )
+                                        }
+                                    >
+                                        {open === order.id
+                                            ? "Hide Details"
+                                            : "View Details"}
+                                    </button>
+
+                                    {order.status === "Pending" && (
+                                        <button
+                                            style={cancelBtn}
+                                            onClick={() =>
+                                                handleCancel(order.id)
+                                            }
+                                        >
+                                            Cancel Order
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* DETAILS */}
+                                <AnimatePresence>
+                                    {open === order.id && (
+                                        <motion.div
+                                            initial={{
+                                                opacity: 0,
+                                                height: 0,
+                                            }}
+                                            animate={{
+                                                opacity: 1,
+                                                height: "auto",
+                                            }}
+                                            exit={{
+                                                opacity: 0,
+                                                height: 0,
+                                            }}
+                                            transition={{
+                                                duration: 0.35,
+                                            }}
+                                            style={details}
+                                        >
+                                            {/* TIMELINE */}
+                                            <div style={timeline}>
+                                                {FLOW.map((step) => (
+                                                    <TimelineStep
+                                                        key={step}
+                                                        label={step}
+                                                        active={
+                                                            FLOW.indexOf(
+                                                                step
+                                                            ) <=
+                                                            FLOW.indexOf(
+                                                                order.status
+                                                            )
+                                                        }
+                                                    />
                                                 ))}
-                                            </ul>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </motion.div>
-                    );
-                })}
-            </div>
+                                            </div>
+
+                                            {/* ITEMS */}
+                                            <div>
+                                                <h4
+                                                    style={sectionTitle}
+                                                >
+                                                    Items
+                                                </h4>
+                                                <ul style={items}>
+                                                    {order.items.map(
+                                                        (
+                                                            item,
+                                                            idx
+                                                        ) => (
+                                                            <li key={idx}>
+                                                                •{" "}
+                                                                {
+                                                                    item.name
+                                                                }{" "}
+                                                                ×{" "}
+                                                                {
+                                                                    item.quantity
+                                                                }
+                                                            </li>
+                                                        )
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            )}
         </UserLayout>
     );
 }
 
-/* ---------------- COMPONENTS ---------------- */
+/* ================= COMPONENTS ================= */
 
 function TimelineStep({ label, active }) {
     return (
@@ -168,19 +272,18 @@ function TimelineStep({ label, active }) {
     );
 }
 
-/* ---------------- STYLES ---------------- */
+/* ================= STYLES ================= */
 
 const header = { marginBottom: "32px" };
+const title = { fontSize: "34px", fontWeight: "800", color: "#ffffff" };
+const subtitle = { color: "#c7d2fe", marginTop: "6px" };
 
-const title = {
-    fontSize: "34px",
-    fontWeight: "800",
-    color: "#ffffff",
-};
-
-const subtitle = {
-    color: "#c7d2fe",
-    marginTop: "6px",
+const empty = {
+    padding: "50px",
+    borderRadius: "22px",
+    background: "rgba(255,255,255,0.06)",
+    color: "#e5e7eb",
+    textAlign: "center",
 };
 
 const list = {
@@ -242,6 +345,12 @@ const progressBar = {
     background: "linear-gradient(90deg,#22c55e,#4ade80)",
 };
 
+const actions = {
+    display: "flex",
+    gap: "12px",
+    marginBottom: "10px",
+};
+
 const trackBtn = {
     padding: "10px 16px",
     borderRadius: "12px",
@@ -249,7 +358,15 @@ const trackBtn = {
     background: "linear-gradient(135deg,#6366f1,#4f46e5)",
     color: "#ffffff",
     cursor: "pointer",
-    marginBottom: "10px",
+};
+
+const cancelBtn = {
+    padding: "10px 16px",
+    borderRadius: "12px",
+    border: "none",
+    background: "linear-gradient(135deg,#ef4444,#dc2626)",
+    color: "#ffffff",
+    cursor: "pointer",
 };
 
 const details = {

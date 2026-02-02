@@ -2,6 +2,9 @@ import axios from "axios";
 
 export const API_URL = "http://localhost:5000/api";
 
+/* =========================
+   AXIOS INSTANCE
+========================= */
 export const api = axios.create({
     baseURL: API_URL,
     headers: { "Content-Type": "application/json" },
@@ -59,7 +62,7 @@ export const addTransaction = (data) =>
 export const getTransactions = () =>
     api.get("/transactions");
 
-/* ===================== CART (LOCKED) ===================== */
+/* ===================== CART (DB-SYNCED) ===================== */
 export const addToCart = (productId) =>
     api.post("/cart/add", { productId });
 
@@ -70,11 +73,17 @@ export const updateCartQty = (productId, delta) =>
     api.put("/cart/update", { productId, delta });
 
 export const removeFromCart = (productId) =>
-    api.delete(`/cart/remove/${productId}`);
+    api.delete(`/cart/${productId}`);
 
-/* ===================== ORDERS (FIXED & LOCKED) ===================== */
+/* ===================== ORDERS (DB-SYNCED) ===================== */
 export const placeOrder = () =>
     api.post("/user/orders/place");
 
 export const getMyOrders = () =>
     api.get("/user/orders/my");
+
+export const cancelOrder = (orderId) =>
+    api.delete(`/user/orders/${orderId}`);
+
+/* ===================== DEFAULT EXPORT ===================== */
+export default api;

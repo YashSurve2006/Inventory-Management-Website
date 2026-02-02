@@ -2,9 +2,10 @@ import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./Context/AuthContext";
 
-/* -------------------- ADMIN IMPORTS (UNCHANGED) -------------------- */
+/* -------------------- ADMIN IMPORTS -------------------- */
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import Landing from "./pages/Landing";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -26,7 +27,7 @@ import UserProtectedRoute from "./user/components/UserProtectedRoute";
 /* -------------------- ROOT REDIRECT -------------------- */
 import RootRedirect from "./pages/RootRedirect";
 
-/* -------------------- ADMIN PROTECTED (UNCHANGED LOGIC) -------------------- */
+/* -------------------- ADMIN PROTECTED -------------------- */
 function Protected({ children }) {
   const user = JSON.parse(localStorage.getItem("ix_user") || "null");
   if (!user) return <Navigate to="/login" replace />;
@@ -37,10 +38,11 @@ function Protected({ children }) {
 export default function AppWrapper() {
   const location = useLocation();
 
-  // Hide admin layout on auth + user pages
+  // Hide admin layout on auth, landing & user pages
   const hideAdminLayout =
     location.pathname === "/login" ||
     location.pathname === "/register" ||
+    location.pathname === "/landing" ||
     location.pathname.startsWith("/user");
 
   return (
@@ -60,16 +62,18 @@ export default function AppWrapper() {
             </div>
           )}
 
-          <div className="p-6">
+          <div className={hideAdminLayout ? "" : "p-6"}>
+
             <Routes>
               {/* ---------------- ROOT ---------------- */}
               <Route path="/" element={<RootRedirect />} />
+              <Route path="/landing" element={<Landing />} />
 
               {/* ---------------- AUTH ---------------- */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
-              {/* ---------------- ADMIN (SAFE) ---------------- */}
+              {/* ---------------- ADMIN ---------------- */}
               <Route
                 path="/dashboard"
                 element={
@@ -124,7 +128,7 @@ export default function AppWrapper() {
                 }
               />
 
-              {/* ---------------- USER (ISOLATED) ---------------- */}
+              {/* ---------------- USER ---------------- */}
               <Route
                 path="/user/dashboard"
                 element={

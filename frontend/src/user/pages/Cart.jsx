@@ -10,6 +10,7 @@ import {
 export default function Cart() {
     const [cart, setCart] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
         fetchCart();
@@ -32,6 +33,25 @@ export default function Cart() {
     );
     const tax = Math.round(subtotal * 0.18);
     const total = subtotal + tax;
+
+    /* =========================
+       CHECKOUT (DB-SYNCED)
+    ========================= */
+    const handleCheckout = async () => {
+        if (cart.length === 0 || processing) return;
+
+        try {
+            setProcessing(true);
+            await placeOrder(); // backend reads cart from DB
+            alert("Order placed successfully 🎉");
+            fetchCart(); // cart cleared by backend
+        } catch (err) {
+            console.error("Checkout failed", err);
+            alert("Failed to place order");
+        } finally {
+            setProcessing(false);
+        }
+    };
 
     return (
         <UserLayout>
@@ -120,16 +140,19 @@ export default function Cart() {
                         </div>
 
                         <button
-                            style={checkoutBtn}
-                            disabled={cart.length === 0}
-                            onClick={() =>
-                                placeOrder(cart).then(() => {
-                                    alert("Order placed successfully 🎉");
-                                    setCart([]);
-                                })
-                            }
+                            style={{
+                                ...checkoutBtn,
+                                opacity:
+                                    cart.length === 0 || processing
+                                        ? 0.6
+                                        : 1,
+                            }}
+                            disabled={cart.length === 0 || processing}
+                            onClick={handleCheckout}
                         >
-                            Proceed to Checkout
+                            {processing
+                                ? "Processing..."
+                                : "Proceed to Checkout"}
                         </button>
                     </div>
                 </div>
@@ -138,7 +161,9 @@ export default function Cart() {
     );
 }
 
-/* ---------------- STYLES ---------------- */
+/* =========================
+   STYLES (UNCHANGED)
+========================= */
 
 const header = { marginBottom: "30px" };
 const title = { fontSize: "34px", fontWeight: "800", color: "#ffffff" };
