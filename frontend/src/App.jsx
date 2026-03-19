@@ -1,182 +1,181 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./Context/AuthContext";
 
-/* -------------------- ADMIN IMPORTS -------------------- */
+/* =========================================================
+   LAZY LOAD (PERFORMANCE BOOST 🚀)
+========================================================= */
+
+/* ---------- COMMON ---------- */
+const Landing = lazy(() => import("./pages/Landing"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const RootRedirect = lazy(() => import("./pages/RootRedirect"));
+
+/* ---------- ADMIN ---------- */
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Products = lazy(() => import("./pages/Products"));
+const Suppliers = lazy(() => import("./pages/Suppliers"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Transactions = lazy(() => import("./pages/Transactions"));
+const Profile = lazy(() => import("./pages/Profile"));
+
+/* ---------- USER ---------- */
+const UserDashboard = lazy(() => import("./user/pages/UserDashboard"));
+const BrowseProducts = lazy(() => import("./user/pages/BrowseProducts"));
+const Cart = lazy(() => import("./user/pages/Cart"));
+const MyOrders = lazy(() => import("./user/pages/MyOrders"));
+const UserProfile = lazy(() => import("./user/pages/UserProfile"));
+
+/* ---------- PCBULDER ---------- */
+const PCBuilder = lazy(() => import("./pcbuilder/pages/PCBuilder"));
+
+/* ---------- LAYOUT ---------- */
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
-import Landing from "./pages/Landing";
-
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import Products from "./pages/Products";
-import Suppliers from "./pages/Suppliers";
-import Reports from "./pages/Reports";
-import Transactions from "./pages/Transactions";
-import Profile from "./pages/Profile";
-
-/* -------------------- USER IMPORTS -------------------- */
-import UserDashboard from "./user/pages/UserDashboard";
-import BrowseProducts from "./user/pages/BrowseProducts";
-import Cart from "./user/pages/Cart";
-import MyOrders from "./user/pages/MyOrders";
-import UserProfile from "./user/pages/UserProfile";
 import UserProtectedRoute from "./user/components/UserProtectedRoute";
 
-/* -------------------- ROOT REDIRECT -------------------- */
-import RootRedirect from "./pages/RootRedirect";
+/* =========================================================
+   LOADER UI
+========================================================= */
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-black text-white">
+      <div className="animate-spin h-10 w-10 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+    </div>
+  );
+}
 
-/* -------------------- ADMIN PROTECTED -------------------- */
+/* =========================================================
+   ADMIN PROTECTED
+========================================================= */
 function Protected({ children }) {
   const user = JSON.parse(localStorage.getItem("ix_user") || "null");
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
-/* -------------------- APP -------------------- */
+/* =========================================================
+   APP
+========================================================= */
 export default function AppWrapper() {
   const location = useLocation();
 
-  // Hide admin layout on auth, landing & user pages
-  const hideAdminLayout =
-    location.pathname === "/login" ||
-    location.pathname === "/register" ||
-    location.pathname === "/landing" ||
-    location.pathname.startsWith("/user");
+  const isAuthPage = ["/login", "/register", "/landing"].includes(
+    location.pathname
+  );
+
+  const isUserPage = location.pathname.startsWith("/user");
 
   return (
     <AuthProvider>
       <div className="flex min-h-screen bg-slate-50">
-        {/* ADMIN SIDEBAR */}
-        {!hideAdminLayout && <Sidebar />}
+
+        {/* ================= ADMIN SIDEBAR ================= */}
+        {!isAuthPage && !isUserPage && <Sidebar />}
 
         <main
-          className={`flex-1 min-h-screen ${!hideAdminLayout ? "ml-60" : ""
+          className={`flex-1 min-h-screen ${!isAuthPage && !isUserPage ? "ml-60" : ""
             }`}
         >
-          {/* ADMIN TOPBAR */}
-          {!hideAdminLayout && (
+
+          {/* ================= ADMIN TOPBAR ================= */}
+          {!isAuthPage && !isUserPage && (
             <div className="sticky top-0 z-50 bg-white shadow">
               <Topbar />
             </div>
           )}
 
-          <div className={hideAdminLayout ? "" : "p-6"}>
+          <div className={!isAuthPage && !isUserPage ? "p-6" : ""}>
 
-            <Routes>
-              {/* ---------------- ROOT ---------------- */}
-              <Route path="/" element={<RootRedirect />} />
-              <Route path="/landing" element={<Landing />} />
+            <Suspense fallback={<PageLoader />}>
 
-              {/* ---------------- AUTH ---------------- */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Routes>
 
-              {/* ---------------- ADMIN ---------------- */}
-              <Route
-                path="/dashboard"
-                element={
-                  <Protected>
-                    <Dashboard />
-                  </Protected>
-                }
-              />
+                {/* ================= ROOT ================= */}
+                <Route path="/" element={<RootRedirect />} />
+                <Route path="/landing" element={<Landing />} />
 
-              <Route
-                path="/products"
-                element={
-                  <Protected>
-                    <Products />
-                  </Protected>
-                }
-              />
+                {/* ================= AUTH ================= */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
 
-              <Route
-                path="/suppliers"
-                element={
-                  <Protected>
-                    <Suppliers />
-                  </Protected>
-                }
-              />
+                {/* ================= ADMIN ================= */}
 
-              <Route
-                path="/transactions"
-                element={
-                  <Protected>
-                    <Transactions />
-                  </Protected>
-                }
-              />
+                <Route path="/dashboard" element={
+                  <Protected><Dashboard /></Protected>
+                } />
 
-              <Route
-                path="/reports"
-                element={
-                  <Protected>
-                    <Reports />
-                  </Protected>
-                }
-              />
+                <Route path="/products" element={
+                  <Protected><Products /></Protected>
+                } />
 
-              <Route
-                path="/profile"
-                element={
-                  <Protected>
-                    <Profile />
-                  </Protected>
-                }
-              />
+                <Route path="/suppliers" element={
+                  <Protected><Suppliers /></Protected>
+                } />
 
-              {/* ---------------- USER ---------------- */}
-              <Route
-                path="/user/dashboard"
-                element={
-                  <UserProtectedRoute>
-                    <UserDashboard />
-                  </UserProtectedRoute>
-                }
-              />
+                <Route path="/transactions" element={
+                  <Protected><Transactions /></Protected>
+                } />
 
-              <Route
-                path="/user/products"
-                element={
-                  <UserProtectedRoute>
-                    <BrowseProducts />
-                  </UserProtectedRoute>
-                }
-              />
+                <Route path="/reports" element={
+                  <Protected><Reports /></Protected>
+                } />
 
-              <Route
-                path="/user/cart"
-                element={
-                  <UserProtectedRoute>
-                    <Cart />
-                  </UserProtectedRoute>
-                }
-              />
+                <Route path="/profile" element={
+                  <Protected><Profile /></Protected>
+                } />
 
-              <Route
-                path="/user/orders"
-                element={
-                  <UserProtectedRoute>
-                    <MyOrders />
-                  </UserProtectedRoute>
-                }
-              />
+                {/* ================= USER ================= */}
 
-              <Route
-                path="/user/profile"
-                element={
-                  <UserProtectedRoute>
-                    <UserProfile />
-                  </UserProtectedRoute>
-                }
-              />
+                <Route path="/user/dashboard" element={
+                  <UserProtectedRoute><UserDashboard /></UserProtectedRoute>
+                } />
 
-              {/* ---------------- FALLBACK ---------------- */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Route path="/user/products" element={
+                  <UserProtectedRoute><BrowseProducts /></UserProtectedRoute>
+                } />
+
+                <Route path="/user/cart" element={
+                  <UserProtectedRoute><Cart /></UserProtectedRoute>
+                } />
+
+                <Route path="/user/orders" element={
+                  <UserProtectedRoute><MyOrders /></UserProtectedRoute>
+                } />
+
+                <Route path="/user/profile" element={
+                  <UserProtectedRoute><UserProfile /></UserProtectedRoute>
+                } />
+
+                {/* ================= PC BUILDER ================= */}
+
+                <Route path="/user/pc-builder" element={
+                  <UserProtectedRoute><PCBuilder /></UserProtectedRoute>
+                } />
+
+                {/* ================= FUTURE ROUTES ================= */}
+
+                {/* 🔥 Builder Enhancements */}
+                <Route path="/user/pc-builder/saved" element={<div>Saved Builds (Future)</div>} />
+                <Route path="/user/pc-builder/history" element={<div>Build History (Future)</div>} />
+                <Route path="/user/pc-builder/compare" element={<div>Compare Builds (Future)</div>} />
+
+                {/* 🔥 User Features */}
+                <Route path="/user/wishlist" element={<div>Wishlist (Future)</div>} />
+                <Route path="/user/recommendations" element={<div>AI Recommendations (Future)</div>} />
+
+                {/* 🔥 Admin Future */}
+                <Route path="/admin/analytics" element={<div>Analytics Dashboard (Future)</div>} />
+                <Route path="/admin/inventory-ai" element={<div>AI Inventory Insights (Future)</div>} />
+
+                {/* ================= FALLBACK ================= */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+
+              </Routes>
+
+            </Suspense>
+
           </div>
         </main>
       </div>

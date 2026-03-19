@@ -4,11 +4,12 @@ export default function UserNavbar() {
     const navigate = useNavigate();
 
     const links = [
-        { name: "Dashboard", path: "/user/dashboard" },
-        { name: "Products", path: "/user/products" },
-        { name: "Cart", path: "/user/cart" },
-        { name: "Orders", path: "/user/orders" },
-        { name: "Profile", path: "/user/profile" },
+        { name: "Dashboard", path: "/user/dashboard", icon: "🏠" },
+        { name: "Products", path: "/user/products", icon: "🛍" },
+        { name: "PC Builder", path: "/user/pc-builder", icon: "🖥" }, // NEW
+        { name: "Cart", path: "/user/cart", icon: "🛒" },
+        { name: "Orders", path: "/user/orders", icon: "📦" },
+        { name: "Profile", path: "/user/profile", icon: "👤" },
     ];
 
     return (
@@ -35,6 +36,9 @@ export default function UserNavbar() {
                             color: isActive ? "#ffffff" : "#c7d2fe",
                         })}
                     >
+                        <span style={{ marginRight: "6px" }}>
+                            {link.icon}
+                        </span>
                         {link.name}
                     </NavLink>
                 ))}
@@ -88,6 +92,8 @@ const btn = {
     fontSize: "14px",
     fontWeight: "500",
     transition: "all 0.25s ease",
+    display: "flex",
+    alignItems: "center",
 };
 
 const logout = {

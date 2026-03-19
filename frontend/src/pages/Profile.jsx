@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import BigHeader from "../components/ui/BigHeader";
-import { api } from "../api";
+import api from "../api";
 import { useAuth } from "../Context/AuthContext";
 
 export default function Profile() {

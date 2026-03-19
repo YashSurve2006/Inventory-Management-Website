@@ -1,76 +1,167 @@
 import express from "express";
-import db from "../db.js";   // ✔ using db.execute everywhere
+import db from "../db.js";
 
 const router = express.Router();
 
-/* ================================
+/* =================================================
    ADD PRODUCT
-================================ */
-router.post("/add", async (req, res) => {
-    const { name, category, quantity, price, min_quantity } = req.body;
+================================================= */
+
+router.post("/", async (req, res) => {
+
+    let {
+        name,
+        category,
+        brand,
+        price,
+        socket,
+        ram_type,
+        wattage,
+        storage_type,
+        size,
+        stock
+    } = req.body;
 
     try {
-        const [result] = await db.execute(
-            "INSERT INTO products (name, category, quantity, price, min_quantity) VALUES (?, ?, ?, ?, ?)",
-            [name, category, quantity, price, min_quantity || 10]
-        );
 
-        res.json({ success: true, message: "Product added", id: result.insertId });
+        const sql = `
+      INSERT INTO products
+      (name, category, brand, price, socket, ram_type, wattage, storage_type, size, stock)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+        const [result] = await db.execute(sql, [
+            name ?? null,
+            category ?? null,
+            brand ?? null,
+            price ?? 0,
+            socket ?? null,
+            ram_type ?? null,
+            wattage ?? null,
+            storage_type ?? null,
+            size ?? null,
+            stock ?? 0
+        ]);
+
+        res.json({
+            success: true,
+            message: "Product added successfully",
+            id: result.insertId
+        });
 
     } catch (error) {
+
         console.error("ADD PRODUCT ERROR:", error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ error: error.message });
+
     }
+
 });
 
-/* ================================
+
+/* =================================================
    GET ALL PRODUCTS
-================================ */
+================================================= */
+
 router.get("/", async (req, res) => {
+
     try {
-        const [rows] = await db.execute("SELECT * FROM products ORDER BY id DESC");
+
+        const [rows] = await db.execute(
+            "SELECT * FROM products ORDER BY id DESC"
+        );
+
         res.json(rows);
 
     } catch (error) {
+
         console.error("GET PRODUCTS ERROR:", error);
         res.status(500).json({ error: error.message });
+
     }
+
 });
 
-/* ================================
-   DELETE PRODUCT
-================================ */
-router.delete("/:id", async (req, res) => {
+
+/* =================================================
+   GET PRODUCT BY ID
+================================================= */
+
+router.get("/:id", async (req, res) => {
+
     try {
-        await db.execute("DELETE FROM products WHERE id = ?", [req.params.id]);
-        res.json({ success: true, message: "Product deleted" });
+
+        const [rows] = await db.execute(
+            "SELECT * FROM products WHERE id = ?",
+            [req.params.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+
+        res.json(rows[0]);
 
     } catch (error) {
-        console.error("DELETE PRODUCT ERROR:", error);
+
+        console.error("GET PRODUCT ERROR:", error);
         res.status(500).json({ error: error.message });
+
     }
+
 });
 
-/* ================================
+
+/* =================================================
    UPDATE PRODUCT
-================================ */
+================================================= */
+
 router.put("/:id", async (req, res) => {
+
     const { id } = req.params;
-    const { name, category, quantity, price, min_quantity } = req.body;
+
+    let {
+        name,
+        category,
+        brand,
+        price,
+        socket,
+        ram_type,
+        wattage,
+        storage_type,
+        size,
+        stock
+    } = req.body;
 
     try {
+
         const sql = `
-            UPDATE products 
-            SET name = ?, category = ?, quantity = ?, price = ?, min_quantity = ?
-            WHERE id = ?
-        `;
+      UPDATE products
+      SET
+        name = ?,
+        category = ?,
+        brand = ?,
+        price = ?,
+        socket = ?,
+        ram_type = ?,
+        wattage = ?,
+        storage_type = ?,
+        size = ?,
+        stock = ?
+      WHERE id = ?
+    `;
 
         const [result] = await db.execute(sql, [
-            name,
-            category,
-            quantity,
-            price,
-            min_quantity || 10,
+            name ?? null,
+            category ?? null,
+            brand ?? null,
+            price ?? 0,
+            socket ?? null,
+            ram_type ?? null,
+            wattage ?? null,
+            storage_type ?? null,
+            size ?? null,
+            stock ?? 0,
             id
         ]);
 
@@ -78,12 +169,50 @@ router.put("/:id", async (req, res) => {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        res.json({ success: true, message: "Product updated successfully" });
+        res.json({
+            success: true,
+            message: "Product updated successfully"
+        });
 
-    } catch (err) {
-        console.error("🔥 UPDATE PRODUCT ERROR:", err);
-        res.status(500).json({ error: "Update failed", details: err.message });
+    } catch (error) {
+
+        console.error("UPDATE PRODUCT ERROR:", error);
+        res.status(500).json({ error: error.message });
+
     }
+
+});
+
+
+/* =================================================
+   DELETE PRODUCT
+================================================= */
+
+router.delete("/:id", async (req, res) => {
+
+    try {
+
+        const [result] = await db.execute(
+            "DELETE FROM products WHERE id = ?",
+            [req.params.id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+
+        res.json({
+            success: true,
+            message: "Product deleted successfully"
+        });
+
+    } catch (error) {
+
+        console.error("DELETE PRODUCT ERROR:", error);
+        res.status(500).json({ error: error.message });
+
+    }
+
 });
 
 export default router;

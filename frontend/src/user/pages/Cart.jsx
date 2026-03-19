@@ -8,6 +8,7 @@ import {
 } from "../../api";
 
 export default function Cart() {
+
     const [cart, setCart] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
@@ -16,45 +17,131 @@ export default function Cart() {
         fetchCart();
     }, []);
 
+    /* =========================
+       LOAD CART
+    ========================= */
+
     const fetchCart = async () => {
         try {
+
             const res = await getCart();
-            setCart(res.data);
+
+            // FIX: backend returns {items,total}
+            setCart(res.data.items || []);
+
         } catch (err) {
+
             console.error("Failed to load cart", err);
+
         } finally {
+
             setLoading(false);
+
         }
     };
-
-    const subtotal = cart.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-    );
-    const tax = Math.round(subtotal * 0.18);
-    const total = subtotal + tax;
 
     /* =========================
-       CHECKOUT (DB-SYNCED)
+       QUANTITY UPDATE
     ========================= */
-    const handleCheckout = async () => {
-        if (cart.length === 0 || processing) return;
+
+    const handleQty = async (productId, delta) => {
 
         try {
-            setProcessing(true);
-            await placeOrder(); // backend reads cart from DB
-            alert("Order placed successfully 🎉");
-            fetchCart(); // cart cleared by backend
+
+            await updateCartQty({
+                productId,
+                delta
+            });
+
+            fetchCart();
+
         } catch (err) {
-            console.error("Checkout failed", err);
-            alert("Failed to place order");
-        } finally {
-            setProcessing(false);
+
+            console.error("Quantity update failed", err);
+
         }
+
     };
+
+    /* =========================
+       REMOVE ITEM
+    ========================= */
+
+    const handleRemove = async (productId) => {
+
+        if (!window.confirm("Remove this item from cart?")) return;
+
+        try {
+
+            await removeFromCart(productId);
+
+            fetchCart();
+
+        } catch (err) {
+
+            console.error("Remove failed", err);
+
+        }
+
+    };
+
+    /* =========================
+       CALCULATIONS
+    ========================= */
+
+    const subtotal = cart.reduce(
+        (sum, item) => sum + Number(item.price) * Number(item.quantity),
+        0
+    );
+
+    const tax = subtotal * 0.18;
+    const total = subtotal + tax;
+
+    const formatCurrency = (value) =>
+        new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0
+        }).format(value);
+    /* =========================
+       CHECKOUT
+    ========================= */
+
+    const handleCheckout = async () => {
+
+        if (!cart.length || processing) return;
+
+        try {
+
+            setProcessing(true);
+
+            await placeOrder();
+
+            alert("Order placed successfully 🎉");
+
+            fetchCart();
+
+        } catch (err) {
+
+            console.error("Checkout failed", err);
+
+            alert("Failed to place order");
+
+        } finally {
+
+            setProcessing(false);
+
+        }
+
+    };
+
+    /* =========================
+       UI
+    ========================= */
 
     return (
         <UserLayout>
+
             <div style={header}>
                 <h1 style={title}>Your Cart</h1>
                 <p style={subtitle}>Review items before checkout</p>
@@ -63,27 +150,33 @@ export default function Cart() {
             {loading && <div style={empty}>Loading cart...</div>}
 
             {!loading && (
+
                 <div style={layout}>
-                    {/* CART ITEMS */}
+
+                    {/* ================= CART ITEMS ================= */}
+
                     <div style={items}>
-                        {cart.length === 0 && (
+
+                        {!cart.length && (
                             <div style={empty}>Your cart is empty 🛒</div>
                         )}
 
                         {cart.map((item) => (
-                            <div key={item.id} style={card}>
+
+                            <div key={item.product_id} style={card}>
+
                                 <div>
+
                                     <h3 style={itemName}>{item.name}</h3>
                                     <p style={price}>₹{item.price}</p>
+
                                 </div>
 
                                 <div style={qtyRow}>
+
                                     <button
                                         style={qtyBtn}
-                                        onClick={() =>
-                                            updateCartQty(item.product_id, -1)
-                                                .then(fetchCart)
-                                        }
+                                        onClick={() => handleQty(item.product_id, -1)}
                                     >
                                         −
                                     </button>
@@ -92,97 +185,125 @@ export default function Cart() {
 
                                     <button
                                         style={qtyBtn}
-                                        onClick={() =>
-                                            updateCartQty(item.product_id, 1)
-                                                .then(fetchCart)
-                                        }
+                                        onClick={() => handleQty(item.product_id, 1)}
                                     >
                                         +
                                     </button>
 
                                     <button
-                                        onClick={() =>
-                                            removeFromCart(item.product_id)
-                                                .then(fetchCart)
-                                        }
                                         style={removeBtn}
+                                        onClick={() => handleRemove(item.product_id)}
                                     >
                                         ✕
                                     </button>
+
                                 </div>
 
                                 <div style={lineTotal}>
                                     ₹{item.price * item.quantity}
                                 </div>
+
                             </div>
+
                         ))}
+
                     </div>
 
-                    {/* SUMMARY */}
+                    {/* ================= SUMMARY ================= */}
+
                     <div style={summary}>
+
                         <h3 style={summaryTitle}>Order Summary</h3>
 
                         <div style={row}>
                             <span>Subtotal</span>
-                            <span>₹{subtotal}</span>
+                            <span>
+                                {new Intl.NumberFormat("en-IN", {
+                                    style: "currency",
+                                    currency: "INR"
+                                }).format(subtotal)}
+                            </span>
                         </div>
 
                         <div style={row}>
                             <span>Tax (18%)</span>
-                            <span>₹{tax}</span>
+                            <span>
+                                {new Intl.NumberFormat("en-IN", {
+                                    style: "currency",
+                                    currency: "INR"
+                                }).format(tax)}
+                            </span>
                         </div>
 
-                        <div style={divider} />
+                        <div style={divider}></div>
 
                         <div style={totalRow}>
                             <span>Total</span>
-                            <span>₹{total}</span>
+                            <span>
+                                {new Intl.NumberFormat("en-IN", {
+                                    style: "currency",
+                                    currency: "INR"
+                                }).format(total)}
+                            </span>
                         </div>
+
 
                         <button
                             style={{
                                 ...checkoutBtn,
-                                opacity:
-                                    cart.length === 0 || processing
-                                        ? 0.6
-                                        : 1,
+                                opacity: !cart.length || processing ? 0.6 : 1
                             }}
-                            disabled={cart.length === 0 || processing}
+                            disabled={!cart.length || processing}
                             onClick={handleCheckout}
                         >
-                            {processing
-                                ? "Processing..."
-                                : "Proceed to Checkout"}
+                            {processing ? "Processing..." : "Proceed to Checkout"}
                         </button>
+
                     </div>
+
                 </div>
+
             )}
+
         </UserLayout>
     );
 }
 
 /* =========================
-   STYLES (UNCHANGED)
+   STYLES
 ========================= */
 
 const header = { marginBottom: "30px" };
-const title = { fontSize: "34px", fontWeight: "800", color: "#ffffff" };
-const subtitle = { color: "#c7d2fe", marginTop: "6px" };
+
+const title = {
+    fontSize: "34px",
+    fontWeight: "800",
+    color: "#ffffff"
+};
+
+const subtitle = {
+    color: "#c7d2fe",
+    marginTop: "6px"
+};
 
 const layout = {
     display: "grid",
     gridTemplateColumns: "2fr 1fr",
-    gap: "30px",
+    gap: "30px"
 };
 
-const items = { display: "flex", flexDirection: "column", gap: "18px" };
+const items = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px"
+};
 
 const empty = {
     padding: "40px",
     borderRadius: "20px",
     background: "rgba(255,255,255,0.06)",
     color: "#e5e7eb",
-    textAlign: "center",
+    textAlign: "center"
 };
 
 const card = {
@@ -191,17 +312,25 @@ const card = {
     alignItems: "center",
     padding: "20px",
     borderRadius: "18px",
-    background: "rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.08)"
 };
 
-const itemName = { fontSize: "17px", fontWeight: "700", color: "#ffffff" };
-const price = { color: "#94a3b8", fontSize: "14px" };
+const itemName = {
+    fontSize: "17px",
+    fontWeight: "700",
+    color: "#ffffff"
+};
+
+const price = {
+    color: "#94a3b8",
+    fontSize: "14px"
+};
 
 const qtyRow = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "10px",
+    gap: "10px"
 };
 
 const qtyBtn = {
@@ -212,7 +341,7 @@ const qtyBtn = {
     background: "rgba(255,255,255,0.12)",
     color: "#ffffff",
     fontSize: "18px",
-    cursor: "pointer",
+    cursor: "pointer"
 };
 
 const removeBtn = {
@@ -221,36 +350,44 @@ const removeBtn = {
     border: "none",
     color: "#ef4444",
     fontSize: "16px",
-    cursor: "pointer",
+    cursor: "pointer"
 };
 
-const qty = { fontWeight: "600", color: "#ffffff" };
-const lineTotal = { textAlign: "right", fontWeight: "700", color: "#ffffff" };
+const qty = {
+    fontWeight: "600",
+    color: "#ffffff"
+};
+
+const lineTotal = {
+    textAlign: "right",
+    fontWeight: "700",
+    color: "#ffffff"
+};
 
 const summary = {
     background: "rgba(255,255,255,0.08)",
     borderRadius: "22px",
-    padding: "26px",
+    padding: "26px"
 };
 
 const summaryTitle = {
     fontSize: "18px",
     fontWeight: "700",
     marginBottom: "18px",
-    color: "#ffffff",
+    color: "#ffffff"
 };
 
 const row = {
     display: "flex",
     justifyContent: "space-between",
     color: "#e5e7eb",
-    marginBottom: "10px",
+    marginBottom: "10px"
 };
 
 const divider = {
     height: "1px",
     background: "rgba(255,255,255,0.15)",
-    margin: "14px 0",
+    margin: "14px 0"
 };
 
 const totalRow = {
@@ -259,7 +396,7 @@ const totalRow = {
     fontSize: "18px",
     fontWeight: "800",
     color: "#ffffff",
-    marginBottom: "20px",
+    marginBottom: "20px"
 };
 
 const checkoutBtn = {
@@ -271,5 +408,5 @@ const checkoutBtn = {
     color: "#ffffff",
     fontWeight: "700",
     fontSize: "15px",
-    cursor: "pointer",
+    cursor: "pointer"
 };
