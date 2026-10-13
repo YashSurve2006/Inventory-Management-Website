@@ -200,19 +200,37 @@ This system is suitable for:
 ```bash
 # Clone repository
 git clone https://github.com/YashSurve2006/Inventory-Management-Website.git
+cd Inventory-Management-Website
 
-# Backend setup
+# Create the schema for a fresh local database
+mysql -u root -p < "MAIN TABLES.sql"
+
+# Configure backend environment
 cd backend
+cp .env.example .env
+# Edit .env: set DB credentials and a unique JWT_SECRET.
 npm install
+
+# Option A: create one administrator (use ADMIN_EMAIL and ADMIN_PASSWORD from .env)
+node create-admin.js
+
+# Option B: seed sample data on a disposable development database only
+# Set NODE_ENV=development, RESET_DEMO_DATA=true,
+# DEMO_ADMIN_PASSWORD and DEMO_STAFF_PASSWORD in backend/.env first.
+# Warning: node seed.js clears and recreates demo data.
+
+# Start the API
 npm start
 
-# Frontend setup
-cd frontend
+# In a second terminal, start the frontend
+cd ../frontend
 npm install
 npm run dev
 ```
 
-Configure database credentials in `db.js` before running.
+Keep `backend/.env` private and never commit it. `backend/.env.example` documents the required settings. Public registration always creates a regular user; administrator-only endpoints require an administrator token. The destructive demo seed refuses to run unless explicitly enabled for a development database.
+
+`MAIN TABLES.sql` is intended for a fresh local database. It does not automatically migrate an existing database; back up existing data and apply a reviewed migration before changing an existing installation.
 
  
 
