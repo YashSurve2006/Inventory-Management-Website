@@ -49,12 +49,12 @@ const seed = async() => {
 
         // Insert products
         await pool.query(
-            `INSERT INTO products (sku, name, category, description, price, quantity, min_quantity, supplier_id) VALUES
-       ('SKU-1001', 'Dell Laptop', 'Electronics', '14-inch i5', 55000, 25, 5, 1),
-       ('SKU-1002', 'HP Laptop', 'Electronics', '15-inch Ryzen 5', 58000, 10, 5, 1),
-       ('SKU-1003', 'Logitech Mouse', 'Accessories', 'Wireless mouse', 799, 60, 10, 2),
-       ('SKU-1004', 'Mechanical Keyboard', 'Accessories', 'Red switches', 2200, 8, 5, 2),
-       ('SKU-1005', 'USB Type-C Cable', 'Electronics', 'Fast charging cable', 299, 40, 10, 3)`
+            `INSERT INTO products (sku, name, category, description, price, quantity, stock, min_quantity, supplier_id) VALUES
+       ('SKU-1001', 'Dell Laptop', 'Electronics', '14-inch i5', 55000, 25, 25, 5, 1),
+       ('SKU-1002', 'HP Laptop', 'Electronics', '15-inch Ryzen 5', 58000, 10, 10, 5, 1),
+       ('SKU-1003', 'Logitech Mouse', 'Accessories', 'Wireless mouse', 799, 60, 60, 10, 2),
+       ('SKU-1004', 'Mechanical Keyboard', 'Accessories', 'Red switches', 2200, 8, 8, 5, 2),
+       ('SKU-1005', 'USB Type-C Cable', 'Electronics', 'Fast charging cable', 299, 40, 40, 10, 3)`
         );
 
         console.log("📦 Sample products inserted.");
