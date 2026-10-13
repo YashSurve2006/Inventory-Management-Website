@@ -114,8 +114,9 @@ export const getBuild = async (req, res) => {
     try {
 
         const buildId = req.params.id;
+        const userId = req.user.id;
 
-        const items = await model.getBuildById(buildId);
+        const items = await model.getBuildById(buildId, userId);
 
         res.json(items);
 
@@ -142,7 +143,7 @@ export const addBuildToCart = async (req, res) => {
 
         const buildId = req.params.id;
 
-        const items = await model.getBuildById(buildId);
+        const items = await model.getBuildById(buildId, userId);
 
         if (!items || items.length === 0) {
 
