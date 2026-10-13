@@ -4,7 +4,7 @@ import { auth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// All user administration endpoints require an authenticated administrator.
+// User administration is restricted to authenticated administrators.
 router.use(auth, (req, res, next) => {
     if (req.user?.role !== "admin") {
         return res.status(403).json({ success: false, message: "Administrator access required" });
