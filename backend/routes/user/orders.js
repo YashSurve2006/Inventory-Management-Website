@@ -25,6 +25,7 @@ router.post("/place", auth, async (req, res) => {
         );
 
         if (cartItems.length === 0) {
+            await conn.rollback();
             return res.status(400).json({ message: "Cart is empty" });
         }
 
@@ -52,12 +53,15 @@ for (const item of cartItems) {
         [orderId, item.product_id, item.quantity, item.price]
     );
 
-    await conn.execute(
+    const [stockUpdate] = await conn.execute(
         `UPDATE products
-         SET stock = stock - ?
-         WHERE id = ?`,
-        [item.quantity, item.product_id]
+         SET stock = stock - ?, quantity = quantity - ?
+         WHERE id = ? AND stock >= ? AND quantity >= ?`,
+        [item.quantity, item.quantity, item.product_id, item.quantity, item.quantity]
     );
+    if (stockUpdate.affectedRows !== 1) {
+        throw new Error("Insufficient stock for one or more cart items");
+    }
 }
 
         // 5️⃣ Clear cart
