@@ -22,7 +22,7 @@ router.use(auth, (req, res, next) => {
 router.post("/add", async (req, res) => {
     const { product_id, supplier_id = null, quantity, type } = req.body;
 
-    if (!product_id || !quantity || !type) {
+    if (!Number.isSafeInteger(Number(product_id)) || Number(product_id) <= 0 || !Number.isSafeInteger(Number(quantity)) || Number(quantity) <= 0 || !["IN", "OUT"].includes(type)) {
         return res.status(400).json({ error: "product_id, quantity and type are required" });
     }
 
@@ -47,20 +47,20 @@ router.post("/add", async (req, res) => {
 
         // 3) update product quantity
         if (type === "IN") {
-            await conn.execute(`UPDATE products SET quantity = quantity + ? WHERE id = ?`, [quantity, product_id]);
+            await conn.execute(`UPDATE products SET quantity = quantity + ?, stock = stock + ? WHERE id = ?`, [quantity, quantity, product_id]);
         } else {
             // prevent negative stock — you can change this behavior as needed
-            const [rows] = await conn.execute(`SELECT quantity FROM products WHERE id = ? FOR UPDATE`, [product_id]);
+            const [rows] = await conn.execute(`SELECT quantity, stock FROM products WHERE id = ? FOR UPDATE`, [product_id]);
             if (!rows || rows.length === 0) {
                 throw new Error("Product not found");
             }
-            const currentQty = rows[0].quantity || 0;
+            const currentQty = Number(rows[0].quantity ?? rows[0].stock ?? 0);
             const newQty = currentQty - Number(quantity);
             if (newQty < 0) {
                 // you can allow negative or prevent — currently we prevent
                 throw new Error("Insufficient stock for OUT transaction");
             }
-            await conn.execute(`UPDATE products SET quantity = ? WHERE id = ?`, [newQty, product_id]);
+            await conn.execute(`UPDATE products SET quantity = ?, stock = ? WHERE id = ?`, [newQty, newQty, product_id]);
         }
 
         await conn.commit();
