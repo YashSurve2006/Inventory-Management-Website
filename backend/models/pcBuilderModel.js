@@ -65,14 +65,15 @@ export const deleteBuild = async (buildId, userId) => {
 
 };
 
-export const getBuildById = async (buildId) => {
+export const getBuildById = async (buildId, userId) => {
 
     const [rows] = await db.query(
         `SELECT p.id, p.name, p.price, p.category
      FROM pc_build_items bi
      JOIN products p ON bi.product_id = p.id
-     WHERE bi.build_id = ?`,
-        [buildId]
+     JOIN pc_builds b ON b.id = bi.build_id
+     WHERE bi.build_id = ? AND b.user_id = ?`,
+        [buildId, userId]
     );
 
     return rows;
