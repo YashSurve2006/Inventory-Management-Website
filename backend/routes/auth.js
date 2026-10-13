@@ -54,9 +54,14 @@ router.post("/login", async (req, res) => {
 
 /* REGISTER */
 router.post("/register", async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
     try {
+        if (typeof name !== "string" || !name.trim() || typeof email !== "string" || !email.trim() || typeof password !== "string" || password.length < 8) {
+            return res.status(400).json({ error: "Name, valid email, and a password of at least 8 characters are required" });
+        }
+
+        // Public registration must never accept a caller-selected role.
         // Basic duplicate check
         const [exists] = await db.execute("SELECT id FROM users WHERE email = ?", [email]);
         if (exists.length) {
@@ -66,8 +71,8 @@ router.post("/register", async (req, res) => {
         const hash = await bcrypt.hash(password, 10);
 
         const [result] = await db.execute(
-            "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-            [name, email, hash, role || "user"]
+            "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'user')",
+            [name.trim(), email.trim().toLowerCase(), hash]
         );
 
         return res.json({ success: true, id: result.insertId });
