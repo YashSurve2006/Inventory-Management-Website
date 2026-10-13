@@ -32,8 +32,8 @@ router.post("/", async (req, res) => {
 
         const sql = `
       INSERT INTO products
-      (name, category, brand, price, socket, ram_type, wattage, storage_type, size, stock)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (name, category, brand, price, socket, ram_type, wattage, storage_type, size, quantity, stock)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
         const [result] = await db.execute(sql, [
@@ -46,6 +46,7 @@ router.post("/", async (req, res) => {
             wattage ?? null,
             storage_type ?? null,
             size ?? null,
+            stock ?? 0,
             stock ?? 0
         ]);
 
@@ -153,6 +154,7 @@ router.put("/:id", async (req, res) => {
         wattage = ?,
         storage_type = ?,
         size = ?,
+        quantity = ?,
         stock = ?
       WHERE id = ?
     `;
@@ -167,6 +169,7 @@ router.put("/:id", async (req, res) => {
             wattage ?? null,
             storage_type ?? null,
             size ?? null,
+            stock ?? 0,
             stock ?? 0,
             id
         ]);
