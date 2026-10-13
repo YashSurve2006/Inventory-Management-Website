@@ -4,11 +4,16 @@ import { auth } from "../middleware/auth.js";
 
 const router = express.Router();
 
+router.use(auth, (req, res, next) => {
+    if (req.user?.role !== "admin") return res.status(403).json({ error: "Administrator access required" });
+    next();
+});
+
 /* ======================================================
    DASHBOARD SUMMARY
 ====================================================== */
 
-router.get("/summary", auth, async (req, res) => {
+router.get("/summary", async (req, res) => {
     try {
 
         const [rows] = await db.execute(`
@@ -37,7 +42,7 @@ router.get("/summary", auth, async (req, res) => {
    LOW STOCK PRODUCTS
 ====================================================== */
 
-router.get("/low-stock", auth, async (req, res) => {
+router.get("/low-stock", async (req, res) => {
     try {
 
         const [rows] = await db.execute(`
@@ -69,7 +74,7 @@ router.get("/low-stock", auth, async (req, res) => {
    CATEGORY STOCK BREAKDOWN
 ====================================================== */
 
-router.get("/category-stock", auth, async (req, res) => {
+router.get("/category-stock", async (req, res) => {
     try {
 
         const [rows] = await db.execute(`
@@ -100,7 +105,7 @@ router.get("/category-stock", auth, async (req, res) => {
    (Using stock as placeholder until sales table exists)
 ====================================================== */
 
-router.get("/top-products", auth, async (req, res) => {
+router.get("/top-products", async (req, res) => {
     try {
 
         const [rows] = await db.execute(`
@@ -130,7 +135,7 @@ router.get("/top-products", auth, async (req, res) => {
    MONTHLY SALES (DEMO DATA)
 ====================================================== */
 
-router.get("/monthly-sales", auth, async (req, res) => {
+router.get("/monthly-sales", async (req, res) => {
     try {
 
         const data = [
@@ -160,7 +165,7 @@ router.get("/monthly-sales", auth, async (req, res) => {
    RECENT ACTIVITY
 ====================================================== */
 
-router.get("/recent-activity", auth, async (req, res) => {
+router.get("/recent-activity", async (req, res) => {
     try {
 
         const [rows] = await db.execute(`
