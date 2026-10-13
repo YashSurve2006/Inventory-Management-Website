@@ -17,10 +17,23 @@ const seed = async() => {
         console.log("🌱 Starting database seed...");
 
         // Clear existing data (optional)
+        await pool.query("DELETE FROM pc_build_items");
+        await pool.query("DELETE FROM pc_builds");
+        await pool.query("DELETE FROM order_items");
+        await pool.query("DELETE FROM orders");
+        await pool.query("DELETE FROM cart");
+        await pool.query("DELETE FROM inventory_logs");
         await pool.query("DELETE FROM transactions");
         await pool.query("DELETE FROM products");
         await pool.query("DELETE FROM suppliers");
         await pool.query("DELETE FROM users");
+
+        // Reset IDs because demo transactions below intentionally reference the seeded rows.
+        await pool.query("ALTER TABLE users AUTO_INCREMENT = 1");
+        await pool.query("ALTER TABLE products AUTO_INCREMENT = 1");
+        await pool.query("ALTER TABLE suppliers AUTO_INCREMENT = 1");
+        await pool.query("ALTER TABLE transactions AUTO_INCREMENT = 1");
+        await pool.query("ALTER TABLE inventory_logs AUTO_INCREMENT = 1");
 
         console.log("🧹 Old data cleared.");
 
