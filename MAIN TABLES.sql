@@ -53,19 +53,6 @@ CREATE TABLE IF NOT EXISTS inventory_logs (
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
--- Insert Sample Data
-
-INSERT INTO users (name, email, password, role)
-VALUES ('Admin', 'admin@example.com', 'admin123', 'admin');
-
-INSERT INTO products (name, category, quantity, price)
-VALUES ('Laptop', 'Electronics', 50, 45000.00);
-
-INSERT INTO suppliers (name, contact, address)
-VALUES ('Tech Supplier Co.', '9876543210', 'Mumbai');
-
-INSERT INTO transactions (product_id, supplier_id, quantity, type)
-VALUES (1, 1, 20, 'IN');
-
-INSERT INTO inventory_logs (product_id, change_amount, action)
-VALUES (1, 20, 'Initial Stock Added');
+-- Sample data intentionally omitted.
+-- Never insert plaintext passwords into users.password.
+-- Use backend seed/bootstrap scripts with environment-provided passwords.
