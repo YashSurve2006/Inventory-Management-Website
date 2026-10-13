@@ -121,25 +121,44 @@ router.get("/my", auth, async (req, res) => {
  */
 router.delete("/:id", auth, async (req, res) => {
     const userId = req.user.id;
-    const orderId = req.params.id;
+    const orderId = Number(req.params.id);
+    if (!Number.isSafeInteger(orderId) || orderId <= 0) {
+        return res.status(400).json({ message: "Invalid order ID" });
+    }
 
+    const conn = await db.getConnection();
     try {
-        const [result] = await db.execute(
-            `DELETE FROM orders
-             WHERE id = ? AND user_id = ? AND status = 'Pending'`,
+        await conn.beginTransaction();
+
+        const [orders] = await conn.execute(
+            "SELECT id FROM orders WHERE id = ? AND user_id = ? AND status = 'Pending' FOR UPDATE",
             [orderId, userId]
         );
-
-        if (result.affectedRows === 0) {
-            return res
-                .status(400)
-                .json({ message: "Order cannot be cancelled" });
+        if (orders.length === 0) {
+            await conn.rollback();
+            return res.status(400).json({ message: "Order cannot be cancelled" });
         }
 
+        const [items] = await conn.execute(
+            "SELECT product_id, quantity FROM order_items WHERE order_id = ?",
+            [orderId]
+        );
+        for (const item of items) {
+            await conn.execute(
+                "UPDATE products SET stock = stock + ?, quantity = quantity + ? WHERE id = ?",
+                [item.quantity, item.quantity, item.product_id]
+            );
+        }
+
+        await conn.execute("DELETE FROM orders WHERE id = ? AND user_id = ?", [orderId, userId]);
+        await conn.commit();
         res.json({ success: true });
     } catch (err) {
+        await conn.rollback();
         console.error("CANCEL ORDER ERROR:", err);
         res.status(500).json({ error: "Failed to cancel order" });
+    } finally {
+        conn.release();
     }
 });
 
