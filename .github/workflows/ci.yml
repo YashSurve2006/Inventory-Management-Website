@@ -1,0 +1,40 @@
+name: InventoryX CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Check backend JavaScript syntax
+        run: |
+          for file in server.js seed.js create-admin.js routes/auth.js routes/users.js routes/products.js routes/suppliers.js routes/transactions.js routes/reports.js routes/dashboard.js routes/user/orders.js models/pcBuilderModel.js controllers/pcbuilder/pcBuilderController.js; do
+            node --check "$file"
+          done
+        working-directory: backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
