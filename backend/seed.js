@@ -1,7 +1,18 @@
+import "dotenv/config";
 import pool from "./db.js";
 import bcrypt from "bcryptjs";
 
 const seed = async() => {
+    if (process.env.NODE_ENV !== "development" || process.env.RESET_DEMO_DATA !== "true") {
+        console.error("Refusing destructive seed: set NODE_ENV=development and RESET_DEMO_DATA=true only for a disposable development database.");
+        process.exit(1);
+    }
+    const adminPassword = process.env.DEMO_ADMIN_PASSWORD;
+    const staffPassword = process.env.DEMO_STAFF_PASSWORD;
+    if (!adminPassword || !staffPassword) {
+        console.error("Set DEMO_ADMIN_PASSWORD and DEMO_STAFF_PASSWORD in backend/.env before seeding.");
+        process.exit(1);
+    }
     try {
         console.log("🌱 Starting database seed...");
 
@@ -14,8 +25,8 @@ const seed = async() => {
         console.log("🧹 Old data cleared.");
 
         // Hash passwords
-        const adminPass = await bcrypt.hash("admin123", 10);
-        const staffPass = await bcrypt.hash("staff123", 10);
+        const adminPass = await bcrypt.hash(adminPassword, 12);
+        const staffPass = await bcrypt.hash(staffPassword, 12);
 
         // Insert users
         await pool.query(
