@@ -26,7 +26,7 @@ It reflects a **hybrid system combining e-commerce workflows with inventory cont
 * Secure JWT-based authentication
 * Role-based access control (`Admin` / `User`)
 * Protected backend routes and frontend guards
-* Encrypted password storage using bcrypt
+* Password hashing using bcrypt
 
  
 
